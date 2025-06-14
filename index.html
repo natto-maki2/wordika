@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordika - 多言語翻訳ツール</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .input-section {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input-box {
+            width: 75%;
+            min-width: 400px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .translate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            min-width: 80px;
+        }
+
+        .translate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .translate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .add-language-section {
+            padding: 20px 30px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #eee;
+        }
+
+        .add-language-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .settings-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .add-label {
+            font-size: 16px;
+            color: #333;
+            min-width: 80px;
+        }
+
+        .language-select {
+            width: 50%;
+            min-width: 300px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .add-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .add-btn:hover {
+            background: #555;
+        }
+
+        .languages-section {
+            padding: 20px 30px;
+        }
+
+        .language-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+            position: relative;
+        }
+
+        .language-item.sortable {
+            cursor: move;
+            background-color: #f9f9f9;
+        }
+
+        .language-item.dragging {
+            opacity: 0.5;
+        }
+
+        .language-item:last-child {
+            border-bottom: none;
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+
+        .remove-btn.visible {
+            display: flex;
+        }
+
+        .language-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .language-name {
+            min-width: 150px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .language-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .translation-result {
+            flex: 1;
+            color: #666;
+            font-style: italic;
+        }
+
+        .translation-result.translated {
+            color: #2c3e50;
+            font-style: normal;
+        }
+
+        .speak-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .edit-mode {
+            background-color: #f8f9fa;
+        }
+
+        .edit-mode .language-item {
+            background-color: transparent;
+        }
+
+
+        .language-item.drop-indicator-top::before {
+            content: '';
+            display: block;
+            height: 2px;
+            background-color: #667eea;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            }
+
+        .language-item.drop-indicator-bottom::after {
+            content: '';
+            display: block;
+            height: 2px;
+            background-color: #667eea;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .loading {
+            opacity: 0.6;
+        }
+
+        .error {
+            color: #e74c3c;
+        }
+
+
+        @media (max-width: 600px) {
+            .input-container {
+                flex-direction: column;
+            }
+
+            .add-language-container {
+                flex-direction: row;      
+                justify-content: center;   
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;           
+            }
+
+            .add-label {
+                display: none; 
+            }
+
+            .language-select {
+                flex: 1;                  
+                min-width: 0;             
+                width: auto !important;   
+            }
+
+            .add-btn {
+                flex: none;
+                min-width: 80px;
+                padding: 10px 16px;
+                white-space: nowrap;
+            }
+
+            /*
+            .language-select {
+                width: 100% !important; 
+                min-width: unset;       
+                margin-bottom: 4px;
+            }
+
+            .add-btn {
+                width: auto !important;
+                min-width: 80px;
+                padding: 12px 25px;
+                margin-top: 0;
+                align-self: center;
+            }
+
+            
+            .add-language-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .add-label {
+                text-align: center;
+                width: 100%; 
+                margin-bottom: 4px;
+            }
+            */
+            
+            .language-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            /*
+            .language-content {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            */
+
+            .language-content {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap; /* モバイルで収まりきらない場合に折り返す */
+                gap: 8px;
+            }
+        }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Wordika</h1>
+        </div>
+        
+        <div class="input-section">
+            <div class="input-container">
+                <input type="text" class="input-box" id="textInput" placeholder="Type here..." />
+                <button class="translate-btn" id="translateBtn">翻訳</button>
+            </div>
+        </div>
+        
+        <div class="add-language-section">
+            <div class="add-language-container">
+                <span class="add-label">言語を追加</span>
+                <select class="language-select" id="languageSelect">
+                    <option value="en">🇬🇧 英語</option>
+                    <option value="it">🇮🇹 イタリア語</option>
+                    <option value="es">🇪🇸 スペイン語</option>
+                    <option value="de">🇩🇪 ドイツ語</option>
+                    <option value="fr">🇫🇷 フランス語</option>
+                    <option value="pt">🇵🇹 ポルトガル語</option>
+                    <option value="ru">🇷🇺 ロシア語</option>
+                    <option value="ko">🇰🇷 韓国語</option>
+                    <option value="zh-cn">🇨🇳 中国語（簡体）</option>
+                    <option value="zh-tw">🇹🇼 中国語（繁体）</option>
+
+                    <option value="id">🇮🇩 インドネシア語</option>
+                    <option value="th">🇹🇭 タイ語</option>
+                    <option value="ne">🇳🇵 ネパール語</option>
+                    <option value="hi">🇮🇳 ヒンディー語</option>
+                    <option value="tl">🇵🇭 フィリピン語</option>
+                    <option value="vi">🇻🇳 ベトナム語</option>
+                    <option value="ms">🇲🇾 マレー語</option>
+                    <option value="my">🇲🇲 ミャンマー語</option>
+                    <option value="mn">🇲🇳 モンゴル語</option>
+
+                    <option value="ar">🇸🇦 アラビア語</option> 
+                    <option value="fa">🇮🇷 ペルシャ語</option>
+
+                    <option value="ka">🇬🇪 ジョージア語</option>
+                    <option value="tr">🇹🇷 トルコ語</option>
+
+                    <option value="nl">🇳🇱 オランダ語</option>
+                    <option value="el">🇬🇷 ギリシャ語</option>
+                    <option value="cs">🇨🇿 チェコ語</option>
+                    <option value="hu">🇭🇺 ハンガリー語</option>
+                    <option value="bg">🇧🇬 ブルガリア語</option>
+                    <option value="pl">🇵🇱 ポーランド語</option>
+                    <option value="hr">🇭🇷 クロアチア語</option>
+                    <option value="ro">🇷🇴 ルーマニア語</option>
+
+                    <option value="sv">🇸🇪 スウェーデン語</option>
+                    <option value="da">🇩🇰 デンマーク語</option>
+                    <option value="fi">🇫🇮 フィンランド語</option>
+                    <option value="no">🇳🇴 ノルウェー語</option>
+                    <option value="is">🇮🇸 アイスランド語</option>
+                    <option value="et">🇪🇪 エストニア語</option>
+                    <option value="lv">🇱🇻 ラトビア語</option>
+                    <option value="lt">🇱🇹 リトアニア語</option>
+
+                    <option value="sw">🇰🇪 スワヒリ語</option>
+                    <option value="haw">🇺🇸 ハワイ語</option>
+                    <option value="mi">🇳🇿 マオリ語</option>
+                </select>
+                <button class="add-btn" id="addBtn">追加</button>
+            </div>
+        </div>
+        
+        <div class="languages-section" id="languagesSection">
+            <div class="language-actions" style="display: flex; justify-content: flex-end; padding: 10px 0; border-bottom: 1px solid #eee;">
+                <button class="settings-btn" id="settingsBtn" title="言語設定">🔧</button>
+            </div>
+            <!-- デフォルトで4つの言語を表示 -->
+            <div class="language-item" data-lang="en" draggable="false">
+                <button class="remove-btn">−</button>
+                <div class="language-content">
+                    <div class="language-name">🇬🇧 英語：</div>
+                    <div class="translation-result"></div>
+                    <button class="speak-btn" title="音声を再生">🔊</button>
+                </div>
+            </div>
+            <div class="language-item" data-lang="de" draggable="false">
+                <button class="remove-btn">−</button>
+                <div class="language-content">
+                    <div class="language-name">🇩🇪 ドイツ語：</div>
+                    <div class="translation-result"></div>
+                    <button class="speak-btn" title="音声を再生">🔊</button>
+                </div>
+            </div>
+            <div class="language-item" data-lang="fr" draggable="false">
+                <button class="remove-btn">−</button>
+                <div class="language-content">
+                    <div class="language-name">🇫🇷 フランス語：</div>
+                    <div class="translation-result"></div>
+                    <button class="speak-btn" title="音声を再生">🔊</button>
+                </div>
+            </div>
+            <div class="language-item" data-lang="es" draggable="false">
+                <button class="remove-btn">−</button>
+                <div class="language-content">
+                    <div class="language-name">🇪🇸 スペイン語：</div>
+                    <div class="translation-result"></div>
+                    <button class="speak-btn" title="音声を再生">🔊</button>
+                </div>
+            </div>
+            <div class="language-item" data-lang="it" draggable="false">
+                <button class="remove-btn">−</button>
+                <div class="language-content">
+                    <div class="language-name">🇮🇹 イタリア語：</div>
+                    <div class="translation-result"></div>
+                    <button class="speak-btn" title="音声を再生">🔊</button>
+                </div>
+            </div>
+            <div class="language-item" data-lang="zh-tw" draggable="false">
+                <button class="remove-btn">−</button>
+                <div class="language-content">
+                    <div class="language-name">🇹🇼 中国語（繁体）：</div>
+                    <div class="translation-result"></div>
+                    <button class="speak-btn" title="音声を再生">🔊</button>
+                </div>
+            </div>
+            <div class="language-item" data-lang="ko" draggable="false">
+                <button class="remove-btn">−</button>
+                <div class="language-content">
+                    <div class="language-name">🇰🇷 韓国語：</div>
+                    <div class="translation-result"></div>
+                    <button class="speak-btn" title="音声を再生">🔊</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 言語コードから言語名へのマッピング
+        const languageNames = {
+            "ar": "🇸🇦 アラビア語",
+            "id": "🇮🇩 インドネシア語",
+            "et": "🇪🇪 エストニア語",
+            "nl": "🇳🇱 オランダ語",
+            "el": "🇬🇷 ギリシャ語",
+            "hr": "🇭🇷 クロアチア語",
+            "ka": "🇬🇪 ジョージア語",
+            "sv": "🇸🇪 スウェーデン語",
+            "es": "🇪🇸 スペイン語",
+            "sw": "🇰🇪 スワヒリ語",
+            "cs": "🇨🇿 チェコ語",
+            "zh-cn": "🇨🇳 中国語（簡体）",
+            "zh-tw": "🇹🇼 中国語（繁体）",
+            "da": "🇩🇰 デンマーク語",
+            "de": "🇩🇪 ドイツ語",
+            "tr": "🇹🇷 トルコ語",
+            "ne": "🇳🇵 ネパール語",
+            "no": "🇳🇴 ノルウェー語",
+            "haw": "🇺🇸 ハワイ語",
+            "hu": "🇭🇺 ハンガリー語",
+            "hi": "🇮🇳 ヒンディー語",
+            "tl": "🇵🇭 フィリピン語",
+            "fi": "🇫🇮 フィンランド語",
+            "fr": "🇫🇷 フランス語",
+            "bg": "🇧🇬 ブルガリア語",
+            "vi": "🇻🇳 ベトナム語",
+            "fa": "🇮🇷 ペルシャ語",
+            "pl": "🇵🇱 ポーランド語",
+            "pt": "🇵🇹 ポルトガル語",
+            "mi": "🇳🇿 マオリ語",
+            "ms": "🇲🇾 マレー語",
+            "my": "🇲🇲 ミャンマー語",
+            "mn": "🇲🇳 モンゴル語",
+            "lv": "🇱🇻 ラトビア語",
+            "lt": "🇱🇹 リトアニア語",
+            "ro": "🇷🇴 ルーマニア語",
+            "ru": "🇷🇺 ロシア語",
+            "ko": "🇰🇷 韓国語",
+            "en": "🇬🇧 英語",
+            "is": "🇮🇸 アイスランド語",
+            "it": "🇮🇹 イタリア語",
+            "th": "🇹🇭 タイ語"
+        };
+
+        // GAS APIのURL（実際のURLに置き換えてください）
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwAfldxaHWjLT2rzxz4FwEhzuxwM3eMoMAdOtfXi9E_SxftU-C7CGr9XsBvY0UzDBaD/exec';
+
+        // DOM要素の取得
+        const textInput = document.getElementById('textInput');
+        const translateBtn = document.getElementById('translateBtn');
+        const languageSelect = document.getElementById('languageSelect');
+        const addBtn = document.getElementById('addBtn');
+        const languagesSection = document.getElementById('languagesSection');
+        const settingsBtn = document.getElementById('settingsBtn');
+
+        // 現在の言語リストを管理
+        let currentLanguages = ['en', 'de', 'fr', 'es', 'it','zh-tw','ko'];
+        let isEditMode = false;
+
+        // 翻訳ボタンのクリックイベント
+        translateBtn.addEventListener('click', translateText);
+
+        // Enterキーでも翻訳実行
+        textInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                translateText();
+            }
+        });
+
+        // 言語追加ボタンのクリックイベント
+        addBtn.addEventListener('click', addLanguage);
+
+        // 設定ボタンのクリックイベント
+        settingsBtn.addEventListener('click', toggleEditMode);
+
+        // 言語削除のイベントデリゲーション
+        languagesSection.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-btn')) {
+                removeLanguage(e.target.closest('.language-item'));
+            }
+        });
+
+        // ドラッグ&ドロップのイベントリスナー
+        languagesSection.addEventListener('dragstart', handleDragStart);
+        languagesSection.addEventListener('dragover', handleDragOver);
+        languagesSection.addEventListener('drop', handleDrop);
+        languagesSection.addEventListener('dragend', handleDragEnd);
+
+        // 翻訳を実行する関数
+        async function translateText() {
+            const text = textInput.value.trim();
+            if (!text) {
+                alert('翻訳するテキストを入力してください');
+                return;
+            }
+
+            // 翻訳ボタンを無効化
+            translateBtn.disabled = true;
+            translateBtn.textContent = '翻訳中...';
+
+            // 各言語の結果欄をローディング状態にする
+            const languageItems = document.querySelectorAll('.language-item');
+            languageItems.forEach(item => {
+                const resultDiv = item.querySelector('.translation-result');
+                resultDiv.textContent = '翻訳中...';
+                resultDiv.className = 'translation-result loading';
+            });
+
+            // 各言語に対して翻訳を実行
+            const promises = currentLanguages.map(async (langCode) => {
+                try {
+                    const response = await fetch(`${GAS_API_URL}?text=${encodeURIComponent(text)}&target=${langCode}&source=ja`);
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    return {
+                        langCode: langCode,
+                        translatedText: data.translatedText,
+                        success: true
+                    };
+                } catch (error) {
+                    console.error(`Error translating to ${langCode}:`, error);
+                    return {
+                        langCode: langCode,
+                        error: error.message,
+                        success: false
+                    };
+                }
+            });
+
+            // すべての翻訳の完了を待つ
+            const results = await Promise.all(promises);
+
+            // 結果を画面に反映
+            results.forEach(result => {
+                const languageItem = document.querySelector(`[data-lang="${result.langCode}"]`);
+                if (languageItem) {
+                    const resultDiv = languageItem.querySelector('.translation-result');
+                    if (result.success) {
+                        resultDiv.textContent = result.translatedText;
+                        resultDiv.className = 'translation-result translated';
+                    } else {
+                        resultDiv.textContent = `エラー: ${result.error}`;
+                        resultDiv.className = 'translation-result error';
+                    }
+                }
+            });
+
+            // 翻訳ボタンを元に戻す
+            translateBtn.disabled = false;
+            translateBtn.textContent = '翻訳';
+        }
+
+        // 言語を追加する関数
+        function addLanguage() {
+            const selectedLang = languageSelect.value;
+            if (!selectedLang) {
+                alert('追加する言語を選択してください');
+                return;
+            }
+
+            // すでに追加されている言語かチェック
+            if (currentLanguages.includes(selectedLang)) {
+                alert('この言語は既に追加されています');
+                return;
+            }
+
+            // 言語リストに追加
+            currentLanguages.push(selectedLang);
+
+            // DOM要素を作成して追加
+            const languageItem = document.createElement('div');
+            languageItem.className = 'language-item';
+            languageItem.setAttribute('data-lang', selectedLang);
+            languageItem.setAttribute('draggable', 'false');
+            
+            languageItem.innerHTML = `
+                <button class="remove-btn">−</button>
+                <div class="language-content">
+                    <div class="language-name">${languageNames[selectedLang]}：</div>
+                    <div class="translation-result"></div>
+                    <button class="speak-btn" title="音声を再生">🔊</button>
+                </div>
+            `;
+
+            languagesSection.appendChild(languageItem);
+
+            // セレクトボックスをリセット
+            languageSelect.value = '';
+        }
+
+        // 音声読み上げ機能
+        languagesSection.addEventListener('click', function(e) {
+        if (e.target.classList.contains('speak-btn')) {
+            const item = e.target.closest('.language-item');
+            const lang = item.getAttribute('data-lang');
+            const text = item.querySelector('.translation-result').textContent;
+            speakText(text, lang);
+        }
+        });
+
+        function speakText(text, lang) {
+        if (!window.speechSynthesis) {
+            alert('このブラウザでは音声合成に対応していません。');
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+
+        const voices = speechSynthesis.getVoices();
+        const matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith(lang));
+        if (matchedVoice) utterance.voice = matchedVoice;
+
+        speechSynthesis.speak(utterance);
+        }
+
+        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = () => {};
+        }
+
+        // 言語を削除する関数
+        function removeLanguage(languageItem) {
+            const langCode = languageItem.getAttribute('data-lang');
+            
+            // 言語リストから削除
+            currentLanguages = currentLanguages.filter(lang => lang !== langCode);
+            
+            // DOM要素を削除
+            languageItem.remove();
+        }
+
+        // 編集モードの切り替え
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const languageItems = document.querySelectorAll('.language-item');
+            
+            if (isEditMode) {
+                // 編集モードON
+                languagesSection.classList.add('edit-mode');
+                settingsBtn.style.backgroundColor = '#007bff';
+                settingsBtn.style.color = 'white';
+                
+                languageItems.forEach(item => {
+                    const removeBtn = item.querySelector('.remove-btn');
+                    removeBtn.classList.add('visible');
+                    item.setAttribute('draggable', 'true');
+                    item.classList.add('sortable');
+                });
+            } else {
+                // 編集モードOFF
+                languagesSection.classList.remove('edit-mode');
+                settingsBtn.style.backgroundColor = '';
+                settingsBtn.style.color = '';
+                
+                languageItems.forEach(item => {
+                    const removeBtn = item.querySelector('.remove-btn');
+                    removeBtn.classList.remove('visible');
+                    item.setAttribute('draggable', 'false');
+                    item.classList.remove('sortable');
+                });
+            }
+        }
+
+        // ドラッグ&ドロップ関連の変数
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            if (!isEditMode || !e.target.classList.contains('language-item')) return;
+            
+            draggedElement = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            if (!isEditMode) return;
+            
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDragOver(e) {
+            if (!isEditMode) return;
+
+            e.preventDefault();
+            const dropTarget = e.target.closest('.language-item');
+            if (!dropTarget || dropTarget === draggedElement) return;
+
+            const rect = dropTarget.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+
+            // 一度すべての drop-indicator クラスを外す
+            document.querySelectorAll('.language-item').forEach(item => {
+                item.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
+            });
+
+            if (e.clientY < midY) {
+                dropTarget.classList.add('drop-indicator-top');
+            } else {
+                dropTarget.classList.add('drop-indicator-bottom');
+            }
+        }
+
+        function handleDrop(e) {
+            if (!isEditMode) return;
+            
+            e.preventDefault();
+            
+            const dropTarget = e.target.closest('.language-item');
+            if (!dropTarget || dropTarget === draggedElement) return;
+            
+            // 要素の位置を入れ替え
+            const rect = dropTarget.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            
+            if (e.clientY < midY) {
+                dropTarget.parentNode.insertBefore(draggedElement, dropTarget);
+            } else {
+                dropTarget.parentNode.insertBefore(draggedElement, dropTarget.nextSibling);
+            }
+
+            // ✅ ガイドラインを消す
+            document.querySelectorAll('.language-item').forEach(item => {
+                item.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
+            });
+            
+            // 言語リストの順序を更新
+            updateLanguageOrder();
+        }
+
+        function handleDragEnd(e) {
+            if (!isEditMode) return;
+            
+            e.target.classList.remove('dragging');
+            draggedElement = null;
+        }
+
+        function updateLanguageOrder() {
+            const languageItems = document.querySelectorAll('.language-item');
+            currentLanguages = Array.from(languageItems).map(item => 
+                item.getAttribute('data-lang')
+            );
+        }
+
+        // 初期化処理（選択肢から既に追加されている言語を除外）
+        function updateLanguageSelect() {
+            const options = languageSelect.querySelectorAll('option');
+            options.forEach(option => {
+                if (option.value && currentLanguages.includes(option.value)) {
+                    option.style.display = 'none';
+                } else {
+                    option.style.display = 'block';
+                }
+            });
+        }
+
+        // 言語が追加/削除されるたびに選択肢を更新
+        const observer = new MutationObserver(updateLanguageSelect);
+        observer.observe(languagesSection, { childList: true });
+
+        // 初期化
+        updateLanguageSelect();
+    </script>
+</body>
+</html>
